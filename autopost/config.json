@@ -1,0 +1,11 @@
+{
+  "start_date": "2026-11-21",
+  "slots": {
+    "weekday": ["13:00", "19:30"],
+    "weekend": ["10:00", "19:00"]
+  },
+  "window_minutes": 120,
+  "skip": [],
+  "thumb_offset_ms": 1500,
+  "graph_version": "v23.0"
+}
