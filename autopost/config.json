@@ -1,11 +1,24 @@
 {
-  "start_date": "2026-11-21",
+  "start_date": "2026-11-20",
   "slots": {
-    "weekday": ["13:00", "19:30"],
-    "weekend": ["10:00", "19:00"]
+    "weekday": [
+      "13:00",
+      "19:30"
+    ],
+    "weekend": [
+      "10:00",
+      "19:00"
+    ]
   },
   "window_minutes": 120,
-  "skip": [],
+  "skip": [
+    "day01_17nov_tue/reel1_intro_golu_ki_duniya",
+    "day01_17nov_tue/reel2_golu_aur_toota_gamla",
+    "day02_18nov_wed/reel1_chiku_aur_kelon_ki_tokri",
+    "day02_18nov_wed/reel2_mishti_ke_daant",
+    "day03_19nov_thu/reel1_golu_aur_pyaasa_kauwa",
+    "day03_19nov_thu/reel2_haath_dhona_zaroori"
+  ],
   "thumb_offset_ms": 1500,
   "graph_version": "v23.0"
 }
