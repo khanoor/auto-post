@@ -49,16 +49,8 @@ Instagram ki **official Graph API** use hoti hai, isliye password kabhi kahin na
 5. (Check) Is Page token ko phir se Access Token Debugger mein daalo → **Expires: Never** dikhna chahiye. ✅
 
 ## Step 6 — GitHub pe repo banao aur Secrets daalo
-1. **github.com** pe account banao (agar nahi hai).
-2. **New repository** → naam `insta-autopost` → **Private** ✅ → Create.
-3. Is folder (`insta-autopost`) ko us repo mein push karo — Terminal mein (repo ka URL GitHub page pe milega):
-   ```bash
-   cd /Users/noor/projects/reel/insta-autopost
-   git remote add origin https://github.com/<aapka-username>/insta-autopost.git
-   git push -u origin main
-   ```
-   (Chaaho to ye step main kar dunga — bas bolo.)
-4. GitHub repo → **Settings → Secrets and variables → Actions → New repository secret**:
+1. ✅ Repo ban chuka hai aur code push ho chuka hai: **github.com/khanoor/auto-post** (Private).
+2. GitHub repo → **Settings → Secrets and variables → Actions → New repository secret**:
    - Name: `IG_ACCESS_TOKEN` → Value: Step 5 wala Page token
    - Name: `IG_USER_ID` → Value: Step 5 wala Instagram id
 
