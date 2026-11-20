@@ -135,13 +135,31 @@ def try_upload(url, data, tok, size, extra):
     return ok, f'HTTP {r.status_code}: {text}'
 
 
+def create_from_url(folder, cap, tok, uid):
+    """video_url method: Instagram downloads the reel from a public link (repo must be public)."""
+    import requests
+    url = CFG['video_base_url'].rstrip('/') + f'/{folder}/reel.mp4'
+    h = requests.head(url, allow_redirects=True, timeout=60)
+    print(f'video link: {url} -> HTTP {h.status_code}, {h.headers.get("Content-Type")}, {h.headers.get("Content-Length")} bytes')
+    if h.status_code != 200:
+        raise SystemExit('Video ka public link nahi khul raha. Kya GitHub repo Public hai? (Settings -> General -> Change visibility)')
+    c = api('POST', f'{GRAPH}/{uid}/media', data={
+        'media_type': 'REELS', 'video_url': url, 'caption': cap, 'share_to_feed': 'true',
+        'thumb_offset': str(CFG.get('thumb_offset_ms', 1500)), 'access_token': tok})
+    print('container', c['id'])
+    return c['id']
+
+
 def post(folder, slot, publish=True):
     tok, uid = creds()
     video = ROOT / 'reels' / folder / 'reel.mp4'
     size = video.stat().st_size
     cap = caption_for(folder)
-    data = video.read_bytes()
     print(f'Posting {folder} ({size / 1e6:.1f} MB) for slot {slot}  [API {CFG["graph_version"]}]')
+    if CFG.get('video_base_url'):
+        cid = create_from_url(folder, cap, tok, uid)
+        return finish(cid, tok, uid, folder, slot, publish)
+    data = video.read_bytes()
 
     # 1+2. create a resumable REELS container and upload the bytes.
     # Only the parameters the docs allow for resumable uploads are sent (no share_to_feed).
@@ -173,12 +191,15 @@ def post(folder, slot, publish=True):
         hint = '' if utok else ' (Tip: IG_USER_TOKEN secret bhi daalo, guide dekho.)'
         raise SystemExit('Video upload fail hua. Upar ke logs mujhe bhejo.' + hint)
     print('uploaded')
+    return finish(cid, tok, uid, folder, slot, publish)
 
+
+def finish(cid, tok, uid, folder, slot, publish):
     # 3. wait for Instagram to process the video
     for _ in range(60):
         st = api('GET', f'{GRAPH}/{cid}', params={'fields': 'status_code,status', 'access_token': tok})
         code = st.get('status_code')
-        print('status', code)
+        print('status', code, '-', st.get('status', ''))
         if code == 'FINISHED':
             break
         if code in ('ERROR', 'EXPIRED'):
