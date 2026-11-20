@@ -103,6 +103,24 @@ def check():
     print(f"Agli reel queue mein: {next_reel(log)}")
 
 
+def try_upload_curl(url, video, tok, size):
+    """Exactly the curl command from Meta's docs. Token goes via a temp header file, not argv."""
+    import subprocess, tempfile
+    with tempfile.NamedTemporaryFile('w', delete=False, suffix='.h') as h:
+        h.write(f'Authorization: OAuth {tok}\noffset: 0\nfile_size: {size}\n')
+        hpath = h.name
+    try:
+        r = subprocess.run(['curl', '-sS', '-X', 'POST', url, '-H', f'@{hpath}', '--data-binary', f'@{video}', '-w', '\nHTTP %{http_code}'],
+                           capture_output=True, text=True, timeout=600)
+    finally:
+        os.unlink(hpath)
+    out = (r.stdout + r.stderr).strip()
+    code = out.rsplit('HTTP ', 1)[-1].strip() if 'HTTP ' in out else '000'
+    body = out.rsplit('\nHTTP ', 1)[0][:400]
+    ok = code.startswith('2') and '"success":true' in body.replace(' ', '')
+    return ok, f'curl HTTP {code}: {body}'
+
+
 def try_upload(url, data, tok, size, extra):
     """POST raw video bytes to the rupload endpoint. Returns (ok, short_response)."""
     import requests
@@ -133,14 +151,18 @@ def post(folder, slot, publish=True):
     if utok:
         tokens.append(('user-token', utok))
     cid = None
-    for name, t in tokens:
+    attempts = [(n, t, 'curl') for n, t in tokens] + [(n, t, 'requests') for n, t in tokens]
+    for name, t, how in attempts:
         c = api('POST', f'{GRAPH}/{uid}/media', data={
             'media_type': 'REELS', 'upload_type': 'resumable', 'caption': cap,
             'thumb_offset': str(CFG.get('thumb_offset_ms', 1500)), 'access_token': t})
         cand = c['id']
         url = c.get('uri') or f'{RUPLOAD}/{cand}'
-        print(f'container {cand} | upload try "{name}" -> {url.split("?")[0]}')
-        ok, resp = try_upload(url, data, t, size, {})
+        print(f'container {cand} | upload try "{name}/{how}" -> {url.split("?")[0]}')
+        if how == 'curl':
+            ok, resp = try_upload_curl(url, video, t, size)
+        else:
+            ok, resp = try_upload(url, data, t, size, {})
         print('   ', resp)
         if ok:
             cid, tok = cand, t
