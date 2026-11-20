@@ -126,27 +126,30 @@ def post(folder, slot, publish=True):
     print(f'Posting {folder} ({size / 1e6:.1f} MB) for slot {slot}  [API {CFG["graph_version"]}]')
 
     # 1+2. create a resumable REELS container and upload the bytes.
-    # Several upload variants are tried (each with a fresh container) and every response is logged.
-    variants = [('returned-uri', None, {}),
-                ('returned-uri+octet-stream', None, {'Content-Type': 'application/octet-stream'}),
-                ('rupload-config-version', 'cfg', {'Content-Type': 'application/octet-stream'})]
+    # Only the parameters the docs allow for resumable uploads are sent (no share_to_feed).
+    # Tried with the Page token first, then with the optional User token (IG_USER_TOKEN secret).
+    tokens = [('page-token', tok)]
+    utok = os.environ.get('IG_USER_TOKEN')
+    if utok:
+        tokens.append(('user-token', utok))
     cid = None
-    for name, url_kind, extra in variants:
+    for name, t in tokens:
         c = api('POST', f'{GRAPH}/{uid}/media', data={
             'media_type': 'REELS', 'upload_type': 'resumable', 'caption': cap,
-            'share_to_feed': 'true', 'thumb_offset': str(CFG.get('thumb_offset_ms', 1500)), 'access_token': tok})
+            'thumb_offset': str(CFG.get('thumb_offset_ms', 1500)), 'access_token': t})
         cand = c['id']
-        url = f'{RUPLOAD}/{cand}' if url_kind == 'cfg' or not c.get('uri') else c['uri']
+        url = c.get('uri') or f'{RUPLOAD}/{cand}'
         print(f'container {cand} | upload try "{name}" -> {url.split("?")[0]}')
-        ok, resp = try_upload(url, data, tok, size, extra)
+        ok, resp = try_upload(url, data, t, size, {})
         print('   ', resp)
         if ok:
-            cid = cand
+            cid, tok = cand, t
             break
-        st = api('GET', f'{GRAPH}/{cand}', params={'fields': 'status_code,status', 'access_token': tok})
-        print('    container status after failed upload:', st)
+        st = api('GET', f'{GRAPH}/{cand}', params={'fields': 'status_code,status,video_status', 'access_token': t})
+        print('    container status after failed upload:', json.dumps(st, ensure_ascii=False)[:600])
     if not cid:
-        raise SystemExit('Video upload har tareeke se fail hua. Upar ke logs mujhe bhejo.')
+        hint = '' if utok else ' (Tip: IG_USER_TOKEN secret bhi daalo, guide dekho.)'
+        raise SystemExit('Video upload fail hua. Upar ke logs mujhe bhejo.' + hint)
     print('uploaded')
 
     # 3. wait for Instagram to process the video
