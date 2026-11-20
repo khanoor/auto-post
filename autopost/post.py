@@ -164,7 +164,9 @@ def main():
 
     log = load_log()
     now = dt.datetime.fromisoformat(a.now).replace(tzinfo=TZ) if a.now else dt.datetime.now(TZ)
-    slot = ('manual-' + now.strftime('%Y-%m-%dT%H:%M')) if a.force else due_slot(now, log)
+    slot = due_slot(now, log)
+    if a.force and not slot:  # manual run outside a slot window
+        slot = 'manual-' + now.strftime('%Y-%m-%dT%H:%M')
     reel = next_reel(log)
     if not slot:
         print(f'{now:%Y-%m-%d %H:%M} IST: abhi koi post due nahi hai.')
