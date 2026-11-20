@@ -10,10 +10,10 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: 'check = token test | test-upload = video upload test (post nahi hoga) | post-next-now = agli reel abhi post karo'
+        description: 'auto = schedule ke hisaab se (cron-job.org ke liye) | check = token test | test-upload = upload test | post-next-now = agli reel abhi post karo'
         type: choice
-        options: [check, test-upload, post-next-now]
-        default: check
+        options: [auto, check, test-upload, post-next-now]
+        default: auto
 
 permissions:
   contents: write
@@ -48,7 +48,7 @@ jobs:
 
       - name: Decide what to post
         id: decide
-        if: github.event_name == 'schedule' || inputs.mode == 'post-next-now' || inputs.mode == 'test-upload'
+        if: github.event_name == 'schedule' || inputs.mode == 'auto' || inputs.mode == 'post-next-now' || inputs.mode == 'test-upload'
         run: |
           if [ "${{ inputs.mode }}" = "post-next-now" ] || [ "${{ inputs.mode }}" = "test-upload" ]; then
             python autopost/post.py decide --force
