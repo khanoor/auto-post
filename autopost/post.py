@@ -103,24 +103,50 @@ def check():
     print(f"Agli reel queue mein: {next_reel(log)}")
 
 
-def post(folder, slot):
+def try_upload(url, data, tok, size, extra):
+    """POST raw video bytes to the rupload endpoint. Returns (ok, short_response)."""
+    import requests
+    headers = {'Authorization': f'OAuth {tok}', 'offset': '0', 'file_size': str(size)}
+    headers.update(extra)
+    try:
+        r = requests.post(url, data=data, headers=headers, timeout=300)
+    except Exception as e:  # network error
+        return False, f'network error: {e}'
+    text = r.text[:400]
+    ok = r.status_code < 400 and '"error"' not in text and 'debug_info' not in text
+    return ok, f'HTTP {r.status_code}: {text}'
+
+
+def post(folder, slot, publish=True):
     tok, uid = creds()
     video = ROOT / 'reels' / folder / 'reel.mp4'
     size = video.stat().st_size
     cap = caption_for(folder)
-    print(f'Posting {folder} ({size / 1e6:.1f} MB) for slot {slot}')
+    data = video.read_bytes()
+    print(f'Posting {folder} ({size / 1e6:.1f} MB) for slot {slot}  [API {CFG["graph_version"]}]')
 
-    # 1. create a resumable REELS container
-    c = api('POST', f'{GRAPH}/{uid}/media', data={
-        'media_type': 'REELS', 'upload_type': 'resumable', 'caption': cap,
-        'share_to_feed': 'true', 'thumb_offset': str(CFG.get('thumb_offset_ms', 1500)), 'access_token': tok})
-    cid = c['id']
-    upload_url = c.get('uri') or f'{RUPLOAD}/{cid}'
-    print('container', cid)
-
-    # 2. upload the video bytes
-    with open(video, 'rb') as f:
-        api('POST', upload_url, data=f.read(), headers={'Authorization': f'OAuth {tok}', 'offset': '0', 'file_size': str(size)})
+    # 1+2. create a resumable REELS container and upload the bytes.
+    # Several upload variants are tried (each with a fresh container) and every response is logged.
+    variants = [('returned-uri', None, {}),
+                ('returned-uri+octet-stream', None, {'Content-Type': 'application/octet-stream'}),
+                ('rupload-config-version', 'cfg', {'Content-Type': 'application/octet-stream'})]
+    cid = None
+    for name, url_kind, extra in variants:
+        c = api('POST', f'{GRAPH}/{uid}/media', data={
+            'media_type': 'REELS', 'upload_type': 'resumable', 'caption': cap,
+            'share_to_feed': 'true', 'thumb_offset': str(CFG.get('thumb_offset_ms', 1500)), 'access_token': tok})
+        cand = c['id']
+        url = f'{RUPLOAD}/{cand}' if url_kind == 'cfg' or not c.get('uri') else c['uri']
+        print(f'container {cand} | upload try "{name}" -> {url.split("?")[0]}')
+        ok, resp = try_upload(url, data, tok, size, extra)
+        print('   ', resp)
+        if ok:
+            cid = cand
+            break
+        st = api('GET', f'{GRAPH}/{cand}', params={'fields': 'status_code,status', 'access_token': tok})
+        print('    container status after failed upload:', st)
+    if not cid:
+        raise SystemExit('Video upload har tareeke se fail hua. Upar ke logs mujhe bhejo.')
     print('uploaded')
 
     # 3. wait for Instagram to process the video
@@ -136,6 +162,10 @@ def post(folder, slot):
     else:
         raise SystemExit('Video processing 10 minute mein poori nahi hui')
 
+    if not publish:
+        print('TEST OK: video upload aur processing dono sahi. (test mode, kuch publish nahi kiya)')
+        return
+
     # 4. publish
     pub = api('POST', f'{GRAPH}/{uid}/media_publish', data={'creation_id': cid, 'access_token': tok})
     mid = pub['id']
@@ -150,7 +180,7 @@ def post(folder, slot):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('mode', choices=['decide', 'post', 'check'])
+    ap.add_argument('mode', choices=['decide', 'post', 'check', 'test-upload'])
     ap.add_argument('--folder')
     ap.add_argument('--slot')
     ap.add_argument('--force', action='store_true', help='decide: ignore schedule, pick next reel now')
@@ -161,6 +191,8 @@ def main():
         return check()
     if a.mode == 'post':
         return post(a.folder, a.slot)
+    if a.mode == 'test-upload':
+        return post(a.folder, 'test', publish=False)
 
     log = load_log()
     now = dt.datetime.fromisoformat(a.now).replace(tzinfo=TZ) if a.now else dt.datetime.now(TZ)

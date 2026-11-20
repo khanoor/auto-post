@@ -10,9 +10,9 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: 'check = sirf token test | post-next-now = agli reel abhi post karo'
+        description: 'check = token test | test-upload = video upload test (post nahi hoga) | post-next-now = agli reel abhi post karo'
         type: choice
-        options: [check, post-next-now]
+        options: [check, test-upload, post-next-now]
         default: check
 
 permissions:
@@ -47,22 +47,28 @@ jobs:
 
       - name: Decide what to post
         id: decide
-        if: github.event_name == 'schedule' || inputs.mode == 'post-next-now'
+        if: github.event_name == 'schedule' || inputs.mode == 'post-next-now' || inputs.mode == 'test-upload'
         run: |
-          if [ "${{ inputs.mode }}" = "post-next-now" ]; then
+          if [ "${{ inputs.mode }}" = "post-next-now" ] || [ "${{ inputs.mode }}" = "test-upload" ]; then
             python autopost/post.py decide --force
           else
             python autopost/post.py decide
           fi
 
+      - name: Test upload (no publish)
+        if: inputs.mode == 'test-upload' && steps.decide.outputs.folder != ''
+        run: |
+          git sparse-checkout add "reels/${{ steps.decide.outputs.folder }}"
+          python autopost/post.py test-upload --folder "${{ steps.decide.outputs.folder }}"
+
       - name: Post reel
-        if: steps.decide.outputs.folder != ''
+        if: inputs.mode != 'test-upload' && steps.decide.outputs.folder != ''
         run: |
           git sparse-checkout add "reels/${{ steps.decide.outputs.folder }}"
           python autopost/post.py post --folder "${{ steps.decide.outputs.folder }}" --slot "${{ steps.decide.outputs.slot }}"
 
       - name: Save posted log
-        if: always() && steps.decide.outputs.folder != ''
+        if: always() && inputs.mode != 'test-upload' && steps.decide.outputs.folder != ''
         run: |
           git config user.name "insta-autopost-bot"
           git config user.email "actions@users.noreply.github.com"
