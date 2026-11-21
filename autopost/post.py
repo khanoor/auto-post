@@ -27,34 +27,34 @@ def save_log(log):
     LOG_PATH.write_text(json.dumps(log, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
 
 
-def queue():
-    items = [l.strip() for l in (HERE / 'queue.txt').read_text(encoding='utf-8').splitlines() if l.strip()]
+def queue(name='queue.txt'):
+    items = [l.strip() for l in (HERE / name).read_text(encoding='utf-8').splitlines() if l.strip()]
     return [i for i in items if i not in CFG.get('skip', [])]
 
 
-def next_reel(log):
+def next_reel(log, name='queue.txt'):
     done = {p['reel'] for p in log['posted']}
-    return next((r for r in queue() if r not in done), None)
+    return next((r for r in queue(name) if r not in done), None)
 
 
-def slots_on(day):
+def slots_on(day, slots=None):
     kind = 'weekend' if day.weekday() >= 5 else 'weekday'
     out = []
-    for hhmm in CFG['slots'][kind]:
+    for hhmm in (slots or CFG['slots'])[kind]:
         h, m = map(int, hhmm.split(':'))
         out.append(dt.datetime(day.year, day.month, day.day, h, m, tzinfo=TZ))
     return out
 
 
-def due_slot(now, log):
+def due_slot(now, log, slots=None, start_date=None):
     """Return the slot (datetime) that is due now and not yet used, else None."""
-    start = dt.date.fromisoformat(CFG['start_date'])
+    start = dt.date.fromisoformat(start_date or CFG['start_date'])
     used = {p['slot'] for p in log['posted']}
     window = dt.timedelta(minutes=CFG['window_minutes'])
     for day in (now.date() - dt.timedelta(days=1), now.date()):
         if day < start:
             continue
-        for s in slots_on(day):
+        for s in slots_on(day, slots):
             key = s.strftime('%Y-%m-%dT%H:%M')
             if s <= now < s + window and key not in used:
                 return key
@@ -245,7 +245,15 @@ def main():
     slot = due_slot(now, log)
     if a.force and not slot:  # manual run outside a slot window
         slot = 'manual-' + now.strftime('%Y-%m-%dT%H:%M')
-    reel = next_reel(log)
+    reel = next_reel(log) if slot else None
+    if not reel and not a.force:  # extra series with their own queue + time slots (e.g. funny clay reels at 5 PM)
+        for name, ser in CFG.get('series', {}).items():
+            s2 = due_slot(now, log, ser['slots'], ser['start_date'])
+            r2 = next_reel(log, ser['queue']) if s2 else None
+            if r2:
+                print(f'series "{name}": slot {s2}')
+                slot, reel = s2, r2
+                break
     if not slot:
         print(f'{now:%Y-%m-%d %H:%M} IST: abhi koi post due nahi hai.')
         return write_output(folder='', slot='')
