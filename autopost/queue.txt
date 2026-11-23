@@ -58,3 +58,8 @@ day29_15dec_tue/reel1_bablu_superhero
 day29_15dec_tue/reel2_sachcha_dost
 day30_16dec_wed/reel1_mera_kamra_meri_zimmedari
 day30_16dec_wed/reel2_jungle_ka_jashn
+day31_17dec_thu/reel1_plastic_ka_rakshas
+day31_17dec_thu/reel2_mishti_ki_jalan
+day32_18dec_fri/reel1_aandhi_toofan
+day32_18dec_fri/reel2_kaalu_par_daya
+day33_19dec_sat/reel1_sab_milkar_pul
