@@ -34,6 +34,18 @@
           "17:00"
         ]
       }
+    },
+    "kitchen": {
+      "queue": "queue_kitchen.txt",
+      "start_date": "2026-11-24",
+      "slots": {
+        "weekday": [
+          "21:45"
+        ],
+        "weekend": [
+          "21:45"
+        ]
+      }
     }
   }
 }
