@@ -23,3 +23,8 @@ funny/f22_13dec_musical_patthar
 funny/f23_14dec_mithi_ka_surprise
 funny/f24_15dec_nakalchi_kallu
 funny/f25_16dec_masti_dance_party
+funny/f26_17dec_aloo_bhaiya_ka_gadda
+funny/f27_18dec_mintu_ki_speed
+funny/f28_19dec_gend_pakdo
+funny/f29_20dec_neend_mein_pappu
+funny/f30_21dec_mithi_aur_madhumakkhi
