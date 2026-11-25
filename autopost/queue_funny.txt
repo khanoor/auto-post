@@ -28,8 +28,3 @@ funny/f27_18dec_mintu_ki_speed
 funny/f28_19dec_gend_pakdo
 funny/f29_20dec_neend_mein_pappu
 funny/f30_21dec_mithi_aur_madhumakkhi
-funny/f31_22dec_sushi_san_ka_namaste
-funny/f32_23dec_ding_ka_naram_gadda
-funny/f33_24dec_seekhu_kabab_aur_mintu
-funny/f34_25dec_boris_ka_dance
-funny/f35_26dec_pino_ki_udaan
