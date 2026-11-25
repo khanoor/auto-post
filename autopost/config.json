@@ -45,7 +45,8 @@
         "weekend": [
           "21:45"
         ]
-      }
+      },
+      "paused": true
     }
   }
 }

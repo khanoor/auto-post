@@ -248,6 +248,8 @@ def main():
     reel = next_reel(log) if slot else None
     if not reel and not a.force:  # extra series with their own queue + time slots (e.g. funny clay reels at 5 PM)
         for name, ser in CFG.get('series', {}).items():
+            if ser.get('paused'):  # series rokna ho to config.json mein "paused": true
+                continue
             s2 = due_slot(now, log, ser['slots'], ser['start_date'])
             r2 = next_reel(log, ser['queue']) if s2 else None
             if r2:
