@@ -3,3 +3,8 @@ kitchen/k02_25nov_mango_lassi
 kitchen/k03_26nov_pav_bhaji
 kitchen/k04_27nov_tamatar_soup
 kitchen/k05_28nov_cheese_sandwich
+kitchen/k06_29nov_japan_sushi
+kitchen/k07_30nov_china_dumplings
+kitchen/k08_01dec_pakistan_seekh_kebab
+kitchen/k09_02dec_russia_blini
+kitchen/k10_03dec_italy_pizza
