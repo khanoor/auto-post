@@ -8,3 +8,8 @@ kitchen/k07_30nov_china_dumplings
 kitchen/k08_01dec_pakistan_seekh_kebab
 kitchen/k09_02dec_russia_blini
 kitchen/k10_03dec_italy_pizza
+kitchen/k11_04dec_masala_dosa
+kitchen/k12_05dec_gajar_halwa
+kitchen/k13_06dec_usa_burger
+kitchen/k14_07dec_hot_chocolate
+kitchen/k15_08dec_masala_noodles
